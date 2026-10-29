@@ -81,6 +81,8 @@ Responses use the shape `{ success, message, data }`. A successful `POST` return
 
 **Limits.** Per IP: 60 API requests a minute, plus 5 questions a minute and 50 a day. Questions are capped at 2,000 characters. Over a limit, the API returns `429` with a readable `message`. Counters are in memory, so on Vercel each warm function instance counts separately.
 
+**Gemini errors.** Gemini's own error text is logged, never shown. When the Gemini quota is used up (the key is on the free tier) or Gemini is overloaded, the API returns `503` with a friendly message; other Gemini failures return `502`.
+
 ## Getting Started (local)
 
 ### Prerequisites

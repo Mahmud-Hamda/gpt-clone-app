@@ -1,5 +1,7 @@
+import { ApiError } from "@google/genai";
 import { env } from "../../config/env.js";
 import { geminiClient } from "../../config/gemini.js";
+import { HttpError } from "../../utils/http-error.js";
 import { SYSTEM_INSTRUCTION } from "./chat.prompt.js";
 import { findRecentMessages, insertMessage } from "./chat.repository.js";
 
@@ -34,11 +36,41 @@ const toGeminiHistory = (messages) =>
   }));
 
 /**
+ * Translates a failed Gemini call into an error that is safe and helpful to
+ * show in the chat. Gemini's own messages are logged, never sent to the client.
+ *
+ * @param {unknown} error - Error thrown by the Gemini SDK.
+ * @returns {HttpError}
+ */
+const toAssistantError = (error) => {
+  console.error("Gemini request failed:", error);
+
+  const status = error instanceof ApiError ? error.status : undefined;
+
+  if (status === 429) {
+    return new HttpError(
+      503,
+      "The assistant has reached its free usage limit for now. Please try again in a few minutes, or come back tomorrow.",
+    );
+  }
+
+  if (status === 500 || status === 503 || status === 504) {
+    return new HttpError(
+      503,
+      "The assistant is busy right now. Please try again in a moment.",
+    );
+  }
+
+  return new HttpError(502, "The assistant couldn't answer right now. Please try again later.");
+};
+
+/**
  * Asks Gemini to answer a question, given the previous conversation as context.
  *
  * @param {string} question
  * @param {Message[]} history - Previous messages, oldest first.
  * @returns {Promise<{ text: string, tokenCount: number }>}
+ * @throws {HttpError} 503 when the Gemini quota is used up or Gemini is overloaded; 502 for other Gemini failures.
  */
 const generateAssistantReply = async (question, history) => {
   const chat = geminiClient.chats.create({
@@ -47,12 +79,16 @@ const generateAssistantReply = async (question, history) => {
     config: GENERATION_CONFIG,
   });
 
-  const response = await chat.sendMessage({ message: question });
+  try {
+    const response = await chat.sendMessage({ message: question });
 
-  return {
-    text: response.text ?? "",
-    tokenCount: response.usageMetadata?.totalTokenCount ?? 0,
-  };
+    return {
+      text: response.text ?? "",
+      tokenCount: response.usageMetadata?.totalTokenCount ?? 0,
+    };
+  } catch (error) {
+    throw toAssistantError(error);
+  }
 };
 
 /**
