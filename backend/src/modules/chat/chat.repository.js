@@ -32,16 +32,17 @@ const toMessage = (row) => ({
 });
 
 /**
- * Returns the most recent messages in chronological order (oldest first).
+ * Returns a session's most recent messages in chronological order (oldest first).
  *
+ * @param {string} sessionId - Anonymous id of the browser session that owns the messages.
  * @param {number} limit - Maximum number of messages to return.
  * @returns {Promise<Message[]>}
  */
-export const findRecentMessages = async (limit) => {
+export const findRecentMessages = async (sessionId, limit) => {
   // `query` (not `execute`): MySQL 8.0.22+ and TiDB reject a prepared-statement placeholder for LIMIT
   const [rows] = await pool.query(
-    `SELECT ${MESSAGE_COLUMNS} FROM conversations ORDER BY id DESC LIMIT ?`,
-    [limit],
+    `SELECT ${MESSAGE_COLUMNS} FROM conversations WHERE session_id = ? ORDER BY id DESC LIMIT ?`,
+    [sessionId, limit],
   );
 
   return rows.map(toMessage).reverse();
@@ -63,18 +64,19 @@ export const findMessageById = async (id) => {
 };
 
 /**
- * Inserts a message and returns the stored record.
+ * Inserts a message into a session and returns the stored record.
  *
  * @param {Object} message
+ * @param {string} message.sessionId
  * @param {MessageRole} message.role
  * @param {string} message.content
  * @param {number} [message.tokenCount=0]
  * @returns {Promise<Message>}
  */
-export const insertMessage = async ({ role, content, tokenCount = 0 }) => {
+export const insertMessage = async ({ sessionId, role, content, tokenCount = 0 }) => {
   const [result] = await pool.execute(
-    "INSERT INTO conversations (role, content, token_count) VALUES (?, ?, ?)",
-    [role, content, tokenCount],
+    "INSERT INTO conversations (session_id, role, content, token_count) VALUES (?, ?, ?, ?)",
+    [sessionId, role, content, tokenCount],
   );
 
   return findMessageById(result.insertId);

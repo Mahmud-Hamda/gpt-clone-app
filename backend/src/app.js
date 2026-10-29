@@ -3,6 +3,7 @@ import express from "express";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found-handler.js";
+import { apiRateLimiter } from "./middleware/rate-limit.js";
 import { apiRouter } from "./routes/index.js";
 
 /**
@@ -16,10 +17,16 @@ import { apiRouter } from "./routes/index.js";
 const app = express();
 
 app.disable("x-powered-by");
-app.use(cors({ origin: env.clientOrigins }));
-app.use(express.json());
 
-app.use("/api", apiRouter);
+// Behind Vercel's proxy, trust one hop so `req.ip` is the visitor's IP (used by the rate limiters)
+if (env.isVercel) {
+  app.set("trust proxy", 1);
+}
+
+app.use(cors({ origin: env.clientOrigins }));
+app.use(express.json({ limit: "16kb" }));
+
+app.use("/api", apiRateLimiter, apiRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

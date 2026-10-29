@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSessionId } from '../utils/session';
 
 /**
  * @typedef {'user' | 'assistant'} MessageRole
@@ -19,10 +20,19 @@ import axios from 'axios';
 const DEFAULT_API_BASE_URL = 'http://localhost:5002/api';
 const FALLBACK_ERROR_MESSAGE = 'Something went wrong. Please try again.';
 
-/** Axios instance preconfigured with the backend base URL. */
+/** Longest question the backend accepts. */
+export const MAX_QUESTION_LENGTH = 2000;
+
+/**
+ * Axios instance preconfigured with the backend base URL and this browser's
+ * session id, so the backend only returns and extends this visitor's chat.
+ */
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Session-Id': getSessionId(),
+  },
 });
 
 /**

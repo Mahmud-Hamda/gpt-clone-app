@@ -1,5 +1,6 @@
 import { ArrowUp, Mic, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { MAX_QUESTION_LENGTH } from '../../services/chatService';
 import styles from './ChatInput.module.css';
 
 /**
@@ -41,6 +42,7 @@ const ChatInput = ({ onSend, isLoading = false }) => {
           placeholder='Ask anything'
           aria-label='Ask anything'
           value={question}
+          maxLength={MAX_QUESTION_LENGTH}
           onChange={(event) => setQuestion(event.target.value)}
           disabled={isLoading}
         />

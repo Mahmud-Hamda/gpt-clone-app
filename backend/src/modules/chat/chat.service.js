@@ -56,27 +56,31 @@ const generateAssistantReply = async (question, history) => {
 };
 
 /**
- * Returns the chat history shown when the app loads.
+ * Returns a session's chat history, shown when the app loads.
  *
+ * @param {string} sessionId
  * @returns {Promise<Message[]>} Messages, oldest first.
  */
-export const getChatHistory = () => findRecentMessages(CHAT_HISTORY_LIMIT);
+export const getChatHistory = (sessionId) => findRecentMessages(sessionId, CHAT_HISTORY_LIMIT);
 
 /**
- * Answers a user's question and stores both sides of the exchange.
+ * Answers a user's question and stores both sides of the exchange in their session.
  *
+ * Only that session's previous messages are sent to Gemini as context.
  * The reply is generated before anything is saved, so a failed Gemini call
  * never leaves an unanswered question in the database.
  *
+ * @param {string} sessionId
  * @param {string} question - The user's question (already validated and trimmed).
  * @returns {Promise<{ userMessage: Message, assistantMessage: Message }>}
  */
-export const askAssistant = async (question) => {
-  const history = await findRecentMessages(CONTEXT_WINDOW_SIZE);
+export const askAssistant = async (sessionId, question) => {
+  const history = await findRecentMessages(sessionId, CONTEXT_WINDOW_SIZE);
   const reply = await generateAssistantReply(question, history);
 
-  const userMessage = await insertMessage({ role: "user", content: question });
+  const userMessage = await insertMessage({ sessionId, role: "user", content: question });
   const assistantMessage = await insertMessage({
+    sessionId,
     role: "assistant",
     content: reply.text,
     tokenCount: reply.tokenCount,

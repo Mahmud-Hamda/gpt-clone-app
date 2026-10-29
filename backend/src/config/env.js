@@ -35,6 +35,7 @@ const parseList = (value) =>
  *
  * @typedef {Object} EnvConfig
  * @property {number} port - Port for the local HTTP server.
+ * @property {boolean} isVercel - True when running as a Vercel Function (behind Vercel's proxy).
  * @property {string[]} clientOrigins - Frontend origins allowed by CORS.
  * @property {DatabaseConfig} database
  * @property {GeminiConfig} gemini
@@ -43,6 +44,7 @@ const parseList = (value) =>
 /** @type {Readonly<EnvConfig>} */
 export const env = Object.freeze({
   port: Number(process.env.PORT) || 5002,
+  isVercel: Boolean(process.env.VERCEL),
   clientOrigins: parseList(process.env.CLIENT_ORIGINS ?? DEFAULT_CLIENT_ORIGINS),
   database: Object.freeze({
     host: process.env.DB_HOST,

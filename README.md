@@ -11,15 +11,17 @@ A ChatGPT-style chat app built with **React + Vite** on the frontend and **Node.
 - ChatGPT-like UI: sidebar, header, message list and input box
 - Markdown rendering of assistant answers
 - Chat history persisted in MySQL and reloaded on page load
-- Recent messages are sent to Gemini as context, so follow-up questions work
+- Private history per visitor: each browser gets an anonymous session id, and only sees its own messages
+- Recent messages from the same session are sent to Gemini as context, so follow-up questions work
 - System prompt restricts the assistant to web development topics
+- Per-IP rate limits and a question length cap protect the Gemini quota
 
 ## Tech Stack
 
 | Layer    | Tech                                              |
 | -------- | ------------------------------------------------- |
 | Frontend | React 19, Vite, axios, react-markdown, lucide-react |
-| Backend  | Node.js, Express 5, mysql2, @google/genai, cors   |
+| Backend  | Node.js, Express 5, mysql2, @google/genai, cors, express-rate-limit |
 | Database | MySQL 8                                           |
 | AI       | Google Gemini                                     |
 
@@ -29,7 +31,8 @@ A ChatGPT-style chat app built with **React + Vite** on the frontend and **Node.
 GPT-Clone/
 ├── backend/
 │   ├── db/
-│   │   └── schema.sql                  # conversations table
+│   │   ├── schema.sql                  # conversations table (fresh installs)
+│   │   └── migrations/                 # changes for existing databases
 │   └── src/
 │       ├── config/
 │       │   ├── env.js                  # typed config from environment variables
@@ -37,7 +40,9 @@ GPT-Clone/
 │       │   └── gemini.js               # Gemini API client
 │       ├── middleware/
 │       │   ├── error-handler.js
-│       │   └── not-found-handler.js
+│       │   ├── not-found-handler.js
+│       │   ├── rate-limit.js           # per-IP request and question limits
+│       │   └── require-session.js      # reads the X-Session-Id header
 │       ├── modules/chat/
 │       │   ├── chat.routes.js          # /api/chat/messages
 │       │   ├── chat.controller.js      # request validation + responses
@@ -53,6 +58,7 @@ GPT-Clone/
 │       ├── components/                 # Sidebar, ChatHeader, MessageList, ChatMessage, ChatInput
 │       ├── hooks/useChat.js            # chat state + send logic
 │       ├── services/chatService.js     # API calls
+│       ├── utils/session.js            # anonymous per-browser session id
 │       ├── App.jsx
 │       └── main.jsx
 ├── docs/architecture.png
@@ -66,10 +72,14 @@ Base URL: `/api`
 | Method | Endpoint         | Body                    | Description                                                    |
 | ------ | ---------------- | ----------------------- | -------------------------------------------------------------- |
 | GET    | `/health`        | —                       | Health check                                                   |
-| GET    | `/chat/messages` | —                       | Returns the most recent messages (oldest first)                |
+| GET    | `/chat/messages` | —                       | Returns the session's most recent messages (oldest first)      |
 | POST   | `/chat/messages` | `{ "question": "..." }` | Asks Gemini, stores the question and reply, returns both       |
 
 Responses use the shape `{ success, message, data }`. A successful `POST` returns `201` with `data: { userMessage, assistantMessage }`.
+
+**Sessions.** Every `/chat` request needs an `X-Session-Id` header containing a UUID. The frontend generates one per browser and keeps it in `localStorage`; it is not a login and identifies nobody. Each session only reads and extends its own history.
+
+**Limits.** Per IP: 60 API requests a minute, plus 5 questions a minute and 50 a day. Questions are capped at 2,000 characters. Over a limit, the API returns `429` with a readable `message`. Counters are in memory, so on Vercel each warm function instance counts separately.
 
 ## Getting Started (local)
 
@@ -87,7 +97,7 @@ npm run install:all
 
 ### 2. Create the database table
 
-Create a database (e.g. `chatgpt_clone_DB`) and run [`backend/db/schema.sql`](backend/db/schema.sql) against it.
+Create a database (e.g. `chatgpt_clone_DB`) and run [`backend/db/schema.sql`](backend/db/schema.sql) against it. If your `conversations` table was created before sessions existed, run the files in [`backend/db/migrations`](backend/db/migrations) instead.
 
 Using Docker, for example:
 
