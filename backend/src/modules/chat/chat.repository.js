@@ -38,7 +38,8 @@ const toMessage = (row) => ({
  * @returns {Promise<Message[]>}
  */
 export const findRecentMessages = async (limit) => {
-  const [rows] = await pool.execute(
+  // `query` (not `execute`): MySQL 8.0.22+ and TiDB reject a prepared-statement placeholder for LIMIT
+  const [rows] = await pool.query(
     `SELECT ${MESSAGE_COLUMNS} FROM conversations ORDER BY id DESC LIMIT ?`,
     [limit],
   );
