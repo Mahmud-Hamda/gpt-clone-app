@@ -2,7 +2,7 @@ import { HttpError } from "../../utils/http-error.js";
 import { askAssistant, getChatHistory } from "./chat.service.js";
 
 /** Longest question accepted, to keep Gemini requests (and their cost) bounded. */
-export const MAX_QUESTION_LENGTH = 2000;
+const MAX_QUESTION_LENGTH = 2000;
 
 /**
  * `GET /api/chat/messages` — returns the chat history of the caller's session.

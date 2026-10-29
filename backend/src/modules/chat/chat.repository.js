@@ -54,7 +54,7 @@ export const findRecentMessages = async (sessionId, limit) => {
  * @param {number} id
  * @returns {Promise<Message | null>} The message, or `null` if it does not exist.
  */
-export const findMessageById = async (id) => {
+const findMessageById = async (id) => {
   const [rows] = await pool.execute(
     `SELECT ${MESSAGE_COLUMNS} FROM conversations WHERE id = ? LIMIT 1`,
     [id],

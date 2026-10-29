@@ -1,7 +1,7 @@
 import { HttpError } from "../utils/http-error.js";
 
 /** Request header carrying the browser's anonymous session id. */
-export const SESSION_HEADER = "X-Session-Id";
+const SESSION_HEADER = "X-Session-Id";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
