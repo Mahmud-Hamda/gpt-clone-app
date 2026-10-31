@@ -35,8 +35,17 @@
   border-radius: 16px;
   font-size: 15px;
   line-height: 1.6;
-  max-width: 80%;
+  max-width: min(80%, 100%);
+  min-width: 0;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+@media (max-width: 767px) {
+  .message {
+    padding: 0 16px;
+    gap: 12px;
+  }
 }
 
 .message.assistant .content {
@@ -128,6 +137,7 @@
 .markdownBody pre {
   padding: 16px;
   overflow: auto;
+  max-width: 100%;
   font-size: 85%;
   line-height: 1.45;
   background-color: #0d0d0d;

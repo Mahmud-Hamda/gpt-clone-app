@@ -28,26 +28,56 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Left navigation sidebar (visual only; the links are placeholders).
+ * Left navigation sidebar. On a narrow screen it is an off-canvas drawer.
+ * The links are placeholders.
  *
+ * @param {Object} props
+ * @param {boolean} [props.open] - Drawer is open.
+ * @param {boolean} [props.mobileHidden] - Drawer is off-screen; keep it out of the tab order.
+ * @param {boolean} [props.narrow] - Viewport is narrow enough for the drawer.
+ * @param {() => void} [props.onClose] - Closes the drawer.
  * @returns {JSX.Element}
  */
-const Sidebar = () => (
-  <aside className={styles.sidebar}>
+const Sidebar = ({ open = false, mobileHidden = false, narrow = false, onClose }) => (
+  <aside
+    id='chat-sidebar'
+    className={`${styles.sidebar}${open ? ` ${styles.sidebarOpen}` : ''}`}
+    inert={mobileHidden ? true : undefined}
+    aria-hidden={mobileHidden || undefined}
+  >
     <div className={styles.header}>
       <div className={styles.logo}>
-        <div className={styles.iconButton}>
+        <button
+          type='button'
+          className={styles.iconButton}
+          aria-label='Close menu'
+          tabIndex={narrow ? 0 : -1}
+          onClick={onClose}
+        >
           <PanelLeftClose size={20} />
-        </div>
+        </button>
       </div>
-      <button type='button' className={styles.iconButton} aria-label='New chat'>
+      <button
+        type='button'
+        className={styles.iconButton}
+        aria-label='New chat'
+        onClick={onClose}
+      >
         <MessageSquare size={20} />
       </button>
     </div>
 
     <nav className={styles.nav}>
       {NAV_ITEMS.map(({ icon: Icon, label }) => (
-        <a key={label} href='#' className={styles.item}>
+        <a
+          key={label}
+          href='#'
+          className={styles.item}
+          onClick={(event) => {
+            event.preventDefault();
+            onClose?.();
+          }}
+        >
           <Icon size={18} />
           <span>{label}</span>
         </a>

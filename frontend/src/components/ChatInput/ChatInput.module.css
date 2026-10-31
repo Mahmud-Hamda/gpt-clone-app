@@ -1,9 +1,17 @@
 .container {
   padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
   flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
 }
 
 .form {
@@ -34,6 +42,7 @@
 
 .input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   color: var(--text-primary);
@@ -68,4 +77,21 @@
 
 .submitButton:hover:not(:disabled) {
   opacity: 0.8;
+}
+
+.submitButton:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .submitButton {
+    width: 44px;
+    height: 44px;
+  }
+
+  .icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
